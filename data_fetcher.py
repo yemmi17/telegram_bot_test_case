@@ -45,39 +45,46 @@ class CurrencyDataFetcher:
             end_date: Конечная дата
             
         Returns:
-            DataFrame с колонками: date, usd_rate
+            DataFrame с колонками: date, usd_rate (всегда возвращает DataFrame, даже если пустой)
         """
         data = []
         current_date = start_date
         failed_attempts = 0
         max_failed_attempts = 5
         
-        while current_date <= end_date:
-            rate = self.get_usd_rate(current_date)
-            if rate is not None:
-                data.append({
-                    'date': current_date.date(),
-                    'usd_rate': rate
-                })
-                failed_attempts = 0  # Сбрасываем счетчик при успехе
-            else:
-                failed_attempts += 1
-                if failed_attempts >= max_failed_attempts:
-                    print(f"Прервано после {max_failed_attempts} неудачных попыток")
-                    break
-            
-            current_date += timedelta(days=1)
-            
-            # Небольшая задержка для избежания rate limiting
-            if len(data) % 10 == 0:
-                import time
-                time.sleep(0.1)
+        try:
+            while current_date <= end_date:
+                rate = self.get_usd_rate(current_date)
+                if rate is not None:
+                    data.append({
+                        'date': current_date.date(),
+                        'usd_rate': rate
+                    })
+                    failed_attempts = 0  # Сбрасываем счетчик при успехе
+                else:
+                    failed_attempts += 1
+                    if failed_attempts >= max_failed_attempts:
+                        print(f"Прервано после {max_failed_attempts} неудачных попыток")
+                        break
+                
+                current_date += timedelta(days=1)
+                
+                # Небольшая задержка для избежания rate limiting
+                if len(data) % 10 == 0:
+                    import time
+                    time.sleep(0.1)
+        except Exception as e:
+            print(f"Ошибка при получении данных: {e}")
         
+        # Всегда возвращаем DataFrame, даже если пустой
         df = pd.DataFrame(data)
         if not df.empty:
             df['date'] = pd.to_datetime(df['date'])
             df = df.sort_values('date')
             df = df.reset_index(drop=True)
+        else:
+            # Создаем пустой DataFrame с правильными колонками
+            df = pd.DataFrame(columns=['date', 'usd_rate'])
         
         return df
     

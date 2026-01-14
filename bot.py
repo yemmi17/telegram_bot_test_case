@@ -79,11 +79,19 @@ class CurrencyBot:
     def _load_and_prepare_data(self) -> None:
         """Загрузка и подготовка данных для модели"""
         try:
-            # Пытаемся загрузить данные из файла, если он существует
-            if os.path.exists('historical_data.csv'):
-                self.historical_data = pd.read_csv('historical_data.csv')
-                self.historical_data['date'] = pd.to_datetime(self.historical_data['date'])
-                logger.info("Загружены исторические данные из файла")
+            # Пытаемся загрузить данные из файла, если он существует и это файл, а не директория
+            if os.path.exists('historical_data.csv') and os.path.isfile('historical_data.csv'):
+                try:
+                    self.historical_data = pd.read_csv('historical_data.csv')
+                    if not self.historical_data.empty:
+                        self.historical_data['date'] = pd.to_datetime(self.historical_data['date'])
+                        logger.info("Загружены исторические данные из файла")
+                    else:
+                        self.historical_data = pd.DataFrame(columns=['date', 'usd_rate'])
+                        logger.info("Файл historical_data.csv пуст, создан пустой DataFrame")
+                except Exception as e:
+                    logger.warning(f"Ошибка при чтении historical_data.csv: {e}")
+                    self.historical_data = pd.DataFrame(columns=['date', 'usd_rate'])
             else:
                 # Создаем пустой DataFrame
                 self.historical_data = pd.DataFrame(columns=['date', 'usd_rate'])
