@@ -13,15 +13,25 @@ from data_fetcher import CurrencyDataFetcher
 from predictor import CurrencyPredictor
 from google_sheets import GoogleSheetsManager
 
-# Загружаем переменные окружения
-load_dotenv()
-
-# Настройка логирования
+# Настройка логирования (сначала, чтобы можно было логировать)
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+
+# Загружаем переменные окружения
+# Пробуем загрузить из .env файла
+env_loaded = load_dotenv(override=True)
+if not env_loaded:
+    logger.warning("Файл .env не найден или пуст. Проверьте наличие файла .env с TELEGRAM_BOT_TOKEN")
+else:
+    # Проверяем, что токен загрузился
+    token_check = os.getenv('TELEGRAM_BOT_TOKEN')
+    if not token_check:
+        logger.warning("Файл .env загружен, но TELEGRAM_BOT_TOKEN не найден. Проверьте формат файла.")
+    else:
+        logger.info(f"Токен загружен (длина: {len(token_check)} символов)")
 
 
 class CurrencyBot:
@@ -30,7 +40,13 @@ class CurrencyBot:
     def __init__(self):
         self.token = os.getenv('TELEGRAM_BOT_TOKEN')
         if not self.token:
-            raise ValueError("TELEGRAM_BOT_TOKEN не установлен в переменных окружения")
+            error_msg = (
+                "TELEGRAM_BOT_TOKEN не установлен в переменных окружения.\n"
+                "Создайте файл .env в корне проекта со следующим содержимым:\n"
+                "TELEGRAM_BOT_TOKEN=ваш_токен_от_BotFather\n\n"
+                "Или установите переменную окружения TELEGRAM_BOT_TOKEN"
+            )
+            raise ValueError(error_msg)
         
         self.data_fetcher = CurrencyDataFetcher()
         self.predictor = CurrencyPredictor()
