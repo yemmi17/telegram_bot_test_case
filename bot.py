@@ -91,13 +91,22 @@ class CurrencyBot:
             
             # Дополняем данные с Центробанка
             cutoff_date = datetime(2021, 11, 1)  # 01.11.2021
-            self.historical_data = self.data_fetcher.supplement_data(
+            supplemented_data = self.data_fetcher.supplement_data(
                 self.historical_data,
                 cutoff_date
             )
             
+            # Проверяем, что данные не None
+            if supplemented_data is None:
+                logger.warning("supplement_data вернул None, используем существующие данные")
+                if self.historical_data is None or self.historical_data.empty:
+                    self.historical_data = pd.DataFrame(columns=['date', 'usd_rate'])
+            else:
+                self.historical_data = supplemented_data
+            
             # Сохраняем обновленные данные
-            self.historical_data.to_csv('historical_data.csv', index=False)
+            if self.historical_data is not None and not self.historical_data.empty:
+                self.historical_data.to_csv('historical_data.csv', index=False)
             logger.info(f"Данные обновлены. Всего записей: {len(self.historical_data)}")
             
             # Обучаем модель
@@ -227,18 +236,30 @@ class CurrencyBot:
         await update.message.reply_text("🔄 Обновление данных... Это может занять некоторое время.")
         
         try:
+            # Убеждаемся, что historical_data не None
+            if self.historical_data is None:
+                self.historical_data = pd.DataFrame(columns=['date', 'usd_rate'])
+            
             # Обновляем данные
             cutoff_date = datetime(2021, 11, 1)
-            self.historical_data = self.data_fetcher.supplement_data(
+            supplemented_data = self.data_fetcher.supplement_data(
                 self.historical_data,
                 cutoff_date
             )
             
+            # Проверяем результат
+            if supplemented_data is None:
+                logger.warning("supplement_data вернул None при обновлении")
+                supplemented_data = self.historical_data if self.historical_data is not None else pd.DataFrame(columns=['date', 'usd_rate'])
+            
+            self.historical_data = supplemented_data
+            
             # Сохраняем данные
-            self.historical_data.to_csv('historical_data.csv', index=False)
+            if self.historical_data is not None and not self.historical_data.empty:
+                self.historical_data.to_csv('historical_data.csv', index=False)
             
             # Переобучаем модель
-            if len(self.historical_data) > 0:
+            if self.historical_data is not None and len(self.historical_data) > 0:
                 ts = self.predictor.prepare_data(self.historical_data)
                 self.predictor.fit_model(ts, method='arima')
                 
@@ -256,6 +277,8 @@ class CurrencyBot:
                 
         except Exception as e:
             logger.error(f"Ошибка при обновлении: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             await update.message.reply_text(f"❌ Ошибка при обновлении: {str(e)}")
     
     def run(self) -> None:

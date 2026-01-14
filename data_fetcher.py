@@ -92,6 +92,12 @@ class CurrencyDataFetcher:
         Returns:
             Объединенный DataFrame с дополненными данными
         """
+        # Проверяем, что existing_data не None и является DataFrame
+        if existing_data is None:
+            existing_data = pd.DataFrame(columns=['date', 'usd_rate'])
+        elif not isinstance(existing_data, pd.DataFrame):
+            existing_data = pd.DataFrame(columns=['date', 'usd_rate'])
+        
         # Преобразуем cutoff_date если это строка
         if isinstance(cutoff_date, str):
             cutoff_date = datetime.strptime(cutoff_date, '%d.%m.%Y')
@@ -102,6 +108,10 @@ class CurrencyDataFetcher:
         
         print(f"Получение данных с {start_date.date()} по {end_date.date()}")
         new_data = self.fetch_data_range(start_date, end_date)
+        
+        # Проверяем, что new_data не None
+        if new_data is None:
+            new_data = pd.DataFrame(columns=['date', 'usd_rate'])
         
         if new_data.empty:
             print("Не удалось получить новые данные")
