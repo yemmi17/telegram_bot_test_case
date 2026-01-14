@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: currency_bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./historical_data.csv:/app/historical_data.csv
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+
